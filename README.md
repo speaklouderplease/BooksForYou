@@ -20,7 +20,7 @@ From the project folder, run:
 python -m booksforyou
 ```
 
-Each run shows one book. Press **Enter** for another, or type **q** to quit.
+The app keeps going: press **Enter** for another book, or type **q** to quit. Ctrl+C also quits.
 
 Example:
 
@@ -52,8 +52,9 @@ tests/
 
 ## Known issues
 
-- Gutendex can be slow or unreachable at times. If so, the app prints a message and exits.
-  It does not retry.
+- Gutendex can be slow or unreachable at times. Each request has a 15-second socket timeout
+  and a 20-second overall budget. If the catalogue cannot be used, the app prints a message and
+  exits. It does not retry.
 - The pick is limited to the 320 most-downloaded books. Gutendex is very slow to serve deeper
   pages, so the wider catalogue is not sampled.
 
