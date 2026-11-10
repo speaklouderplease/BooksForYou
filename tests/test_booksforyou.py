@@ -61,6 +61,14 @@ class RandomBookTests(unittest.TestCase):
         self.assertEqual(book["id"], 201)
         self.assertEqual(rng.randrange.call_count, 2)
 
+    def test_picks_only_from_popular_pages(self):
+        first = {"count": 79767, "results": [make_book(i) for i in range(32)]}
+        rng = mock.Mock()
+        rng.randrange.return_value = 0
+        with mock.patch.object(api, "fetch_page", return_value=first):
+            api.random_book(rng=rng)
+        rng.randrange.assert_called_once_with(api.POPULAR_PAGES * api.PAGE_SIZE)
+
     def test_empty_catalogue_raises(self):
         with mock.patch.object(api, "fetch_page", return_value={"count": 0, "results": []}):
             with self.assertRaises(api.CatalogueError):

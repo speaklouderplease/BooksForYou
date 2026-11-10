@@ -2,7 +2,8 @@
 
 Can't decide what to read next? BooksForYou picks a random free, public-domain book from the
 [Gutendex](https://gutendex.com) catalogue of [Project Gutenberg](https://www.gutenberg.org) and
-shows you its title, author and a link to read it online.
+shows you its title, author and a link to read it online. The pick is random among the 320 most
+popular (most downloaded) books, so you get a well-known classic each time.
 
 ## Requirements
 
@@ -53,9 +54,8 @@ tests/
 
 - Gutendex can be slow or unreachable at times. If so, the app prints a message and exits.
   It does not retry.
-- Choosing a book at random means requesting a random page of the catalogue. Gutendex can take
-  a long time to serve deeper pages the first time they are requested, which may trigger the
-  timeout.
+- The pick is limited to the 320 most-downloaded books. Gutendex is very slow to serve deeper
+  pages, so the wider catalogue is not sampled.
 
 ## Licence
 

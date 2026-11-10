@@ -8,6 +8,9 @@ import urllib.request
 
 API_URL = "https://gutendex.com/books/"
 PAGE_SIZE = 32  # Gutendex returns 32 books per page.
+# Gutendex lists books by download count, most popular first. Deep pages are very slow
+# to serve, so we only pick from the first POPULAR_PAGES pages (320 most-downloaded books).
+POPULAR_PAGES = 10
 TIMEOUT_SECONDS = 15
 USER_AGENT = "BooksForYou/1.0"
 
@@ -31,14 +34,15 @@ def fetch_page(page):
 
 
 def random_book(rng=random):
-    """Pick a book uniformly at random from the whole catalogue."""
+    """Pick a book uniformly at random from the most popular books in the catalogue."""
     first = fetch_page(1)
     count = first.get("count", 0)
     if not isinstance(count, int) or count <= 0:
         raise CatalogueError("the book catalogue is empty.")
 
+    pool = min(count, POPULAR_PAGES * PAGE_SIZE)
     while True:
-        index = rng.randrange(count)
+        index = rng.randrange(pool)
         page_number, position = divmod(index, PAGE_SIZE)
         page_number += 1  # Gutendex pages start at 1.
         data = first if page_number == 1 else fetch_page(page_number)
