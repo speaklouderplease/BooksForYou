@@ -60,6 +60,7 @@ def format_book(book):
         f"Title:  {title}",
         f"Author: {_format_authors(book.get('authors'))}",
         f"Read:   {_link(book.get('id'))}",
+        "Years on the Author line indicate birth and death dates.",
     ]
     return "\n".join(lines)
 
