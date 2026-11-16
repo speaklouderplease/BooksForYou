@@ -26,7 +26,7 @@ def _year(value):
 def _format_author(author):
     name = _clean(author.get("name") or "Unknown author")
     # Gutendex stores names as "Last, First"; show them as "First Last".
-    if ", " in name:
+    if name.count(",") == 1 and ", " in name:
         last, first = name.split(", ", 1)
         name = f"{first} {last}"
     birth = _year(author.get("birth_year"))
