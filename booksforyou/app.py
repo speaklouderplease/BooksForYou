@@ -1,6 +1,8 @@
 """Interactive command-line interface for BooksForYou."""
 
 import re
+import shutil
+import textwrap
 
 from .api import CatalogueError, Catalogue
 
@@ -56,11 +58,17 @@ def _link(book_id):
 def format_book(book):
     """Return a human-readable multi-line description of a Gutendex book record."""
     title = _clean(book.get("title") or "Untitled")
-    lines = [
-        f"Title:  {title}",
-        f"Author: {_format_authors(book.get('authors'))}",
-        f"Read:   {_link(book.get('id'))}",
-    ]
+    authors = _format_authors(book.get("authors"))
+    link = _link(book.get("id"))
+    wrapper = textwrap.TextWrapper(
+        width=max(9, shutil.get_terminal_size().columns),
+        subsequent_indent=" " * 8,
+    )
+    lines = []
+    for label, value in (("Title:  ", title), ("Author: ", authors)):
+        wrapper.initial_indent = label
+        lines.append(wrapper.fill(value) or label)
+    lines.append("Read:   unavailable" if link == "unavailable" else f"Link:   {link}")
     return "\n".join(lines)
 
 
