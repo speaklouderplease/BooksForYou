@@ -39,6 +39,10 @@ class CatalogueError(Exception):
         self.hint = hint
 
 
+class CatalogueExhausted(Exception):
+    """Raised when the session has consumed all recommendation positions."""
+
+
 def _read_limited(response):
     """Read a response body, enforcing a size cap and an overall time budget."""
     deadline = time.monotonic() + REQUEST_DEADLINE_SECONDS
@@ -96,6 +100,9 @@ class Catalogue:
         self._rng = rng if rng is not None else random
         self._count = None  # Total books reported by Gutendex, loaded once.
         self._pages = {}  # page number -> results list
+        self._remaining = None
+        self._seen_ids = set()
+        self._has_returned_book = False
 
     def _load_first_page(self):
         if self._count is None:
@@ -116,15 +123,47 @@ class Catalogue:
         return self._pages[page_number]
 
     def random_book(self):
-        """Pick a book uniformly at random from the most popular books in the catalogue."""
-        count = self._load_first_page()
-        pool = min(count, POPULAR_PAGES * PAGE_SIZE)
+        """Pick a random book from the remaining positions in the popular pool."""
+        if self._remaining is None:
+            count = self._load_first_page()
+            pool = min(count, POPULAR_PAGES * PAGE_SIZE)
+            self._remaining = list(range(pool))
+
         for _ in range(MAX_ATTEMPTS):
-            index = self._rng.randrange(pool)
+            if not self._remaining:
+                break
+            draw = self._rng.randrange(len(self._remaining))
+            index = self._remaining[draw]
             page_number, position = divmod(index, PAGE_SIZE)
             page_number += 1  # Gutendex pages start at 1.
             results = self._page(page_number)
             # The last page can be shorter than PAGE_SIZE; retry if the index falls outside it.
-            if position < len(results) and isinstance(results[position], dict):
-                return results[position]
+            if position >= len(results) or not isinstance(results[position], dict):
+                continue
+
+            self._remaining[draw] = self._remaining[-1]
+            self._remaining.pop()
+            book = results[position]
+            book_id = book.get("id")
+            if isinstance(book_id, int) and not isinstance(book_id, bool):
+                if book_id in self._seen_ids:
+                    continue
+                self._seen_ids.add(book_id)
+            self._has_returned_book = True
+            return book
+
+        if self._has_returned_book:
+            # Keep unfetched pages available for a later retry.
+            usable = []
+            for index in self._remaining:
+                page_number, position = divmod(index, PAGE_SIZE)
+                results = self._pages.get(page_number + 1)
+                if results is None or (
+                    position < len(results) and isinstance(results[position], dict)
+                ):
+                    usable.append(index)
+            self._remaining = usable
+
+        if not self._remaining:
+            raise CatalogueExhausted
         raise CatalogueError(NO_BOOK_FOUND, RETRY_HINT)

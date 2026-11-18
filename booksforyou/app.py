@@ -2,7 +2,7 @@
 
 import re
 
-from .api import CatalogueError, Catalogue
+from .api import CatalogueError, Catalogue, CatalogueExhausted
 
 BOOK_URL = "https://www.gutenberg.org/ebooks/{}"
 WELCOME = "Welcome to BooksForYou - a random pick from public-domain classics."
@@ -82,6 +82,9 @@ def run(input_func=input, output=print, picker=None):
             output("Finding a book...")
             try:
                 book = picker()
+            except CatalogueExhausted:
+                output("You've seen all available picks.")
+                break
             except CatalogueError as exc:
                 output(_error_text(exc))
                 return 1
